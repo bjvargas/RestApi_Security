@@ -7,28 +7,28 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class UserRepositoryUserDetailsService implements UserDetailsService {
     private final UserRepository users;
-
     public UserRepositoryUserDetailsService(UserRepository users) {
         this.users = users;
     }
 
 
     private static class BridgeUser extends User implements UserDetails {
-        public BridgeUser(User user) {
-            super(user);
-        }
+        private final Collection<GrantedAuthority> authorities;
 
+        public BridgeUser(User user, Collection<GrantedAuthority> authorities) {
+            super(user);
+            this.authorities = authorities;
+        }
         @Override
-        public List<GrantedAuthority> getAuthorities() {
-            return this.userAuthorities.stream()
-                    .map(UserAuthority::getAuthority)
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
+        public Collection<? extends GrantedAuthority> getAuthorities()  {
+            return this.authorities;
+
         }
 
         @Override
@@ -46,10 +46,22 @@ public class UserRepositoryUserDetailsService implements UserDetailsService {
             return this.enabled;
         }
     }
+
     @Override
     public UserDetails loadUserByUsername(String username) {
         return this.users.findByUsername(username)
-                .map(BridgeUser::new)
-                .orElseThrow(() -> new UsernameNotFoundException("invalid user"));
+                .map(this::map)
+                .orElseThrow(() -> new UsernameNotFoundException("no user"));
     }
+    private BridgeUser map(User user) {
+        Collection<GrantedAuthority> authorities = new HashSet<>();
+        for (UserAuthority userAuthority : user.getUserAuthorities()) {
+            String authority = userAuthority.getAuthority();
+            if ("ROLE_ADMIN".equals(authority)) {
+                authorities.add(new SimpleGrantedAuthority("resolution:read"));
+                authorities.add(new SimpleGrantedAuthority("resolution:write"));
+            }
+            authorities.add(new SimpleGrantedAuthority(authority));
+        }
+        return new BridgeUser(user, authorities);    }
 }
