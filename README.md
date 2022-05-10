@@ -16,8 +16,14 @@ https://docs.spring.io/spring-boot/docs/current/reference/html/cli.html
 </dependency>
 
 **SPRING CLI**
+spring encodepassword password;
+Configure JWT and Opaque Tokens;
+CORS and Profile Roles.
 
-spring encodepassword password
+
+*PluralSight security project completed.*
+
+![image](https://user-images.githubusercontent.com/70863493/167667323-9607a016-46a1-4c23-96c6-41dac838b134.png)
 
 
 
